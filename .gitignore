@@ -1,0 +1,39 @@
+# Arquivos compilados
+scanner
+tradutor
+lex.yy.c
+
+# Arquivos temporários e de saída
+tokens_python.txt
+tokens_portugues.txt
+*.out
+*.o
+*.a
+*.so
+*.dll
+
+# Arquivos de depuração
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Arquivos do sistema
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Arquivos de editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Diretórios temporários
+tmp/
+temp/
