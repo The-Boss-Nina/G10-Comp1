@@ -1,4 +1,4 @@
-# Parser Leticia - Comp1
+# Parser realizado pelo grupo
 
 Parser feito com Flex e Bison para expressões matemáticas.
 
