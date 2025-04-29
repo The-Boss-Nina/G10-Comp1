@@ -1,6 +1,6 @@
-# Compilador Python para Linguagem Abstrata em Português
+# Interpretador Python para Linguagem Abstrata em Português
 
-Este projeto implementa um compilador que traduz código Python para uma linguagem abstrata em português. Ele foi desenvolvido como parte da disciplina de Compiladores 1 (FGA0003).
+Este projeto implementa um interpretador que traduz código Python para uma linguagem abstrata em português. Ele foi desenvolvido como parte da disciplina de Compiladores 1 (FGA0003).
 
 ## Estrutura do Projeto
 
@@ -13,7 +13,7 @@ O projeto é composto pelos seguintes componentes:
 
 ## Tokens Implementados
 
-O compilador reconhece os seguintes tipos de tokens:
+O interpretador reconhece os seguintes tipos de tokens:
 
 ### Palavras-chave
 - `if` → `se`
