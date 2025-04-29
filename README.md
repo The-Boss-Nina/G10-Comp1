@@ -73,24 +73,6 @@ Também é possível executar cada etapa separadamente:
 # Executar apenas o tradutor
 ./tradutor tokens_python.txt > tokens_portugues.txt
 ```
-
-## Planejamento para Próximas Fases
-
-1. **Fase Sintática**:
-   - Desenvolver um parser para analisar a estrutura gramatical do código Python
-   - Construir uma árvore sintática abstrata (AST)
-   - Implementar verificação de erros sintáticos
-
-2. **Fase Semântica**:
-   - Verificar tipos e validar operações
-   - Analisar escopo de variáveis
-   - Detectar erros semânticos
-
-3. **Geração de Código**:
-   - Converter a AST para código em português completo
-   - Otimizar o código gerado
-   - Considerar implementar um interpretador para a linguagem abstrata em português
-
 ## Exemplo
 
 Para o código Python:
