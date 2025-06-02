@@ -1,7 +1,8 @@
 # Arquivos compilados
 scanner
-tradutor
+interpretador
 lex.yy.c
+parser.tab.*
 
 # Arquivos temporários e de saída
 tokens_python.txt
