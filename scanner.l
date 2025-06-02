@@ -101,6 +101,19 @@ INDENTACAO  ^[ \t]+
     }
 }
 
+    /* Início de linha sem indentação - pode precisar de DEDENT */
+^[^ \t\n] {
+    if (inicio_linha && nivel_indentacao > 0) {
+        // Estávamos indentados e agora não estamos mais
+        unput(yytext[0]); // Volta o caractere para o buffer
+        nivel_indentacao = stack_indentacao[--topo_stack];
+        return DEDENT;
+    } else {
+        unput(yytext[0]); // Volta o caractere para o buffer
+        inicio_linha = 0;
+    }
+}
+
     /* Palavras-chave */
 "if"        { atualiza_localizacao(); inicio_linha = 0; return IF; }
 "elif"      { atualiza_localizacao(); inicio_linha = 0; return ELIF; }
