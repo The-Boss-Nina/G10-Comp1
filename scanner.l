@@ -2,11 +2,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+/* Forward declaration para evitar dependências circulares */
+typedef struct ASTNode ASTNode;
+
+/* Definir YYSTYPE antes de incluir parser.tab.h */
+typedef union {
+    int integer;
+    double real;
+    char* string;
+    ASTNode* node;
+} YYSTYPE;
+
+#define YYSTYPE_IS_DECLARED 1
+extern YYSTYPE yylval;
+
+#include "parser.tab.h"
 
 int linha = 1;
 int coluna = 1;
 int nivel_indentacao = 0;
-int ultimo_nivel_indentacao = 0;
+int stack_indentacao[100];
+int topo_stack = 0;
+int inicio_linha = 1;
 
 void atualiza_localizacao() {
     coluna += yyleng;
@@ -15,31 +34,42 @@ void atualiza_localizacao() {
 void nova_linha() {
     linha++;
     coluna = 1;
+    inicio_linha = 1;
 }
 
-void conta_indentacao() {
+int processa_indentacao() {
     int espacos = 0;
     char *texto = yytext;
+    
+    // Conta espaços e tabs
     while (*texto != '\0') {
         if (*texto == ' ') {
             espacos++;
         } else if (*texto == '\t') {
-            espacos += 4; // convenção comum em Python (1 tab = 4 espaços)
+            espacos += 4; // 1 tab = 4 espaços
         }
         texto++;
     }
     
-    ultimo_nivel_indentacao = nivel_indentacao;
-    nivel_indentacao = espacos / 4; // assumindo 4 espaços por nível
+    int novo_nivel = espacos / 4;
     
-    if (nivel_indentacao > ultimo_nivel_indentacao) {
-        printf("INDENT\n");
-    } else if (nivel_indentacao < ultimo_nivel_indentacao) {
-        int diferenca = ultimo_nivel_indentacao - nivel_indentacao;
-        for (int i = 0; i < diferenca; i++) {
-            printf("DEDENT\n");
+    if (novo_nivel > nivel_indentacao) {
+        // Aumentou indentação
+        stack_indentacao[topo_stack++] = nivel_indentacao;
+        nivel_indentacao = novo_nivel;
+        return INDENT;
+    } else if (novo_nivel < nivel_indentacao) {
+        // Diminuiu indentação - pode precisar de múltiplos DEDENTs
+        // Por enquanto, retorna apenas um DEDENT
+        if (topo_stack > 0) {
+            nivel_indentacao = stack_indentacao[--topo_stack];
+        } else {
+            nivel_indentacao = novo_nivel;
         }
+        return DEDENT;
     }
+    
+    return 0; // Mesmo nível de indentação
 }
 
 %}
@@ -59,112 +89,147 @@ INDENTACAO  ^[ \t]+
 
 %%
 
-"if"        { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"elif"      { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"else"      { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"while"     { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"for"       { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"in"        { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"def"       { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"return"    { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"class"     { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"import"    { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"from"      { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"as"        { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"try"       { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"except"    { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"finally"   { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"with"      { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"break"     { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"continue"  { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"pass"      { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"None"      { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"True"      { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"False"     { atualiza_localizacao(); printf("PALAVRA_CHAVE: %s\n", yytext); }
-"and"       { atualiza_localizacao(); printf("OPERADOR_LOGICO: %s\n", yytext); }
-"or"        { atualiza_localizacao(); printf("OPERADOR_LOGICO: %s\n", yytext); }
-"not"       { atualiza_localizacao(); printf("OPERADOR_LOGICO: %s\n", yytext); }
-
-"+"         { atualiza_localizacao(); printf("OPERADOR_ARITMETICO: %s\n", yytext); }
-"-"         { atualiza_localizacao(); printf("OPERADOR_ARITMETICO: %s\n", yytext); }
-"*"         { atualiza_localizacao(); printf("OPERADOR_ARITMETICO: %s\n", yytext); }
-"/"         { atualiza_localizacao(); printf("OPERADOR_ARITMETICO: %s\n", yytext); }
-"%"         { atualiza_localizacao(); printf("OPERADOR_ARITMETICO: %s\n", yytext); }
-"**"        { atualiza_localizacao(); printf("OPERADOR_ARITMETICO: %s\n", yytext); }
-"//"        { atualiza_localizacao(); printf("OPERADOR_ARITMETICO: %s\n", yytext); }
-
-"="         { atualiza_localizacao(); printf("OPERADOR_ATRIBUICAO: %s\n", yytext); }
-"+="        { atualiza_localizacao(); printf("OPERADOR_ATRIBUICAO: %s\n", yytext); }
-"-="        { atualiza_localizacao(); printf("OPERADOR_ATRIBUICAO: %s\n", yytext); }
-"*="        { atualiza_localizacao(); printf("OPERADOR_ATRIBUICAO: %s\n", yytext); }
-"/="        { atualiza_localizacao(); printf("OPERADOR_ATRIBUICAO: %s\n", yytext); }
-"%="        { atualiza_localizacao(); printf("OPERADOR_ATRIBUICAO: %s\n", yytext); }
-
-"=="        { atualiza_localizacao(); printf("OPERADOR_COMPARACAO: %s\n", yytext); }
-"!="        { atualiza_localizacao(); printf("OPERADOR_COMPARACAO: %s\n", yytext); }
-"<"         { atualiza_localizacao(); printf("OPERADOR_COMPARACAO: %s\n", yytext); }
-">"         { atualiza_localizacao(); printf("OPERADOR_COMPARACAO: %s\n", yytext); }
-"<="        { atualiza_localizacao(); printf("OPERADOR_COMPARACAO: %s\n", yytext); }
-">="        { atualiza_localizacao(); printf("OPERADOR_COMPARACAO: %s\n", yytext); }
-
-"("         { atualiza_localizacao(); printf("DELIMITADOR: %s\n", yytext); }
-")"         { atualiza_localizacao(); printf("DELIMITADOR: %s\n", yytext); }
-"["         { atualiza_localizacao(); printf("DELIMITADOR: %s\n", yytext); }
-"]"         { atualiza_localizacao(); printf("DELIMITADOR: %s\n", yytext); }
-"{"         { atualiza_localizacao(); printf("DELIMITADOR: %s\n", yytext); }
-"}"         { atualiza_localizacao(); printf("DELIMITADOR: %s\n", yytext); }
-":"         { atualiza_localizacao(); printf("DELIMITADOR: %s\n", yytext); }
-","         { atualiza_localizacao(); printf("DELIMITADOR: %s\n", yytext); }
-"."         { atualiza_localizacao(); printf("DELIMITADOR: %s\n", yytext); }
-
-{ID}        { atualiza_localizacao(); printf("IDENTIFICADOR: %s\n", yytext); }
-{NUM_INT}   { atualiza_localizacao(); printf("NUMERO_INTEIRO: %s\n", yytext); }
-{NUM_FLOAT} { atualiza_localizacao(); printf("NUMERO_FLOAT: %s\n", yytext); }
-{STRING}    { atualiza_localizacao(); printf("STRING: %s\n", yytext); }
-
+    /* Tratamento de indentação */
 {INDENTACAO} { 
-    if (coluna == 1) {
-        conta_indentacao();
+    if (inicio_linha) {
+        coluna += yyleng;
+        inicio_linha = 0;
+        int token = processa_indentacao();
+        if (token) return token;
+    } else {
+        coluna += yyleng;
     }
-    coluna += yyleng;
 }
 
+    /* Início de linha sem indentação - pode precisar de DEDENT */
+^[^ \t\n] {
+    if (inicio_linha && nivel_indentacao > 0) {
+        // Estávamos indentados e agora não estamos mais
+        unput(yytext[0]); // Volta o caractere para o buffer
+        nivel_indentacao = stack_indentacao[--topo_stack];
+        return DEDENT;
+    } else {
+        unput(yytext[0]); // Volta o caractere para o buffer
+        inicio_linha = 0;
+    }
+}
+
+    /* Palavras-chave */
+"if"        { atualiza_localizacao(); inicio_linha = 0; return IF; }
+"elif"      { atualiza_localizacao(); inicio_linha = 0; return ELIF; }
+"else"      { atualiza_localizacao(); inicio_linha = 0; return ELSE; }
+"while"     { atualiza_localizacao(); inicio_linha = 0; return WHILE; }
+"for"       { atualiza_localizacao(); inicio_linha = 0; return FOR; }
+"in"        { atualiza_localizacao(); inicio_linha = 0; return IN; }
+"def"       { atualiza_localizacao(); inicio_linha = 0; return DEF; }
+"return"    { atualiza_localizacao(); inicio_linha = 0; return RETURN; }
+"class"     { atualiza_localizacao(); inicio_linha = 0; return CLASS; }
+"import"    { atualiza_localizacao(); inicio_linha = 0; return IMPORT; }
+"from"      { atualiza_localizacao(); inicio_linha = 0; return FROM; }
+"as"        { atualiza_localizacao(); inicio_linha = 0; return AS; }
+"try"       { atualiza_localizacao(); inicio_linha = 0; return TRY; }
+"except"    { atualiza_localizacao(); inicio_linha = 0; return EXCEPT; }
+"finally"   { atualiza_localizacao(); inicio_linha = 0; return FINALLY; }
+"with"      { atualiza_localizacao(); inicio_linha = 0; return WITH; }
+"break"     { atualiza_localizacao(); inicio_linha = 0; return BREAK; }
+"continue"  { atualiza_localizacao(); inicio_linha = 0; return CONTINUE; }
+"pass"      { atualiza_localizacao(); inicio_linha = 0; return PASS; }
+"None"      { atualiza_localizacao(); inicio_linha = 0; return NONE; }
+"True"      { atualiza_localizacao(); inicio_linha = 0; return TRUE; }
+"False"     { atualiza_localizacao(); inicio_linha = 0; return FALSE; }
+
+    /* Operadores lógicos */
+"and"       { atualiza_localizacao(); inicio_linha = 0; return AND; }
+"or"        { atualiza_localizacao(); inicio_linha = 0; return OR; }
+"not"       { atualiza_localizacao(); inicio_linha = 0; return NOT; }
+
+    /* Operadores aritméticos - ordem importante! */
+"**"        { atualiza_localizacao(); inicio_linha = 0; return POWER; }
+"//"        { atualiza_localizacao(); inicio_linha = 0; return FLOOR_DIV; }
+"+"         { atualiza_localizacao(); inicio_linha = 0; return PLUS; }
+"-"         { atualiza_localizacao(); inicio_linha = 0; return MINUS; }
+"*"         { atualiza_localizacao(); inicio_linha = 0; return MULTIPLY; }
+"/"         { atualiza_localizacao(); inicio_linha = 0; return DIVIDE; }
+"%"         { atualiza_localizacao(); inicio_linha = 0; return MODULO; }
+
+    /* Operadores de atribuição - ordem importante! */
+"+="        { atualiza_localizacao(); inicio_linha = 0; return PLUS_ASSIGN; }
+"-="        { atualiza_localizacao(); inicio_linha = 0; return MINUS_ASSIGN; }
+"*="        { atualiza_localizacao(); inicio_linha = 0; return MULTIPLY_ASSIGN; }
+"/="        { atualiza_localizacao(); inicio_linha = 0; return DIVIDE_ASSIGN; }
+"%="        { atualiza_localizacao(); inicio_linha = 0; return MODULO_ASSIGN; }
+"="         { atualiza_localizacao(); inicio_linha = 0; return ASSIGN; }
+
+    /* Operadores de comparação - ordem importante! */
+"=="        { atualiza_localizacao(); inicio_linha = 0; return EQUAL; }
+"!="        { atualiza_localizacao(); inicio_linha = 0; return NOT_EQUAL; }
+"<="        { atualiza_localizacao(); inicio_linha = 0; return LESS_EQUAL; }
+">="        { atualiza_localizacao(); inicio_linha = 0; return GREATER_EQUAL; }
+"<"         { atualiza_localizacao(); inicio_linha = 0; return LESS; }
+">"         { atualiza_localizacao(); inicio_linha = 0; return GREATER; }
+
+    /* Delimitadores */
+"("         { atualiza_localizacao(); inicio_linha = 0; return LPAREN; }
+")"         { atualiza_localizacao(); inicio_linha = 0; return RPAREN; }
+"["         { atualiza_localizacao(); inicio_linha = 0; return LBRACKET; }
+"]"         { atualiza_localizacao(); inicio_linha = 0; return RBRACKET; }
+"{"         { atualiza_localizacao(); inicio_linha = 0; return LBRACE; }
+"}"         { atualiza_localizacao(); inicio_linha = 0; return RBRACE; }
+":"         { atualiza_localizacao(); inicio_linha = 0; return COLON; }
+","         { atualiza_localizacao(); inicio_linha = 0; return COMMA; }
+"."         { atualiza_localizacao(); inicio_linha = 0; return DOT; }
+
+    /* Tokens literais */
+{ID}        { 
+    atualiza_localizacao(); 
+    inicio_linha = 0; 
+    yylval.string = strdup(yytext); 
+    return IDENTIFIER; 
+}
+{NUM_INT}   { 
+    atualiza_localizacao(); 
+    inicio_linha = 0; 
+    yylval.integer = atoi(yytext); 
+    return INTEGER; 
+}
+{NUM_FLOAT} { 
+    atualiza_localizacao(); 
+    inicio_linha = 0; 
+    yylval.real = atof(yytext); 
+    return FLOAT; 
+}
+{STRING}    { 
+    atualiza_localizacao(); 
+    inicio_linha = 0; 
+    yylval.string = strdup(yytext); 
+    return STRING_LITERAL; 
+}
+
+    /* Nova linha */
 {NOVA_LINHA} { 
     nova_linha();
-    printf("NOVA_LINHA\n");
+    return NEWLINE;
 }
 
-{ESPACO}    { atualiza_localizacao(); /* Ignora espaços que não estão no início da linha */ }
+    /* Espaços (ignorados exceto no início da linha) */
+{ESPACO}    { 
+    if (!inicio_linha) {
+        atualiza_localizacao(); 
+    }
+}
 
-"#".*       { atualiza_localizacao(); printf("COMENTARIO: %s\n", yytext); }
+    /* Comentários */
+"#".*       { atualiza_localizacao(); inicio_linha = 0; /* ignora comentários */ }
 
+    /* Caracteres não reconhecidos */
 .           { 
     atualiza_localizacao(); 
     printf("ERRO: Caractere não reconhecido '%s' na linha %d, coluna %d\n", yytext, linha, coluna-1); 
+    inicio_linha = 0;
 }
 
 %%
 
-int main(int argc, char **argv) {
-    if (argc > 1) {
-        FILE *arquivo = fopen(argv[1], "r");
-        if (!arquivo) {
-            printf("Erro ao abrir o arquivo %s\n", argv[1]);
-            return 1;
-        }
-        yyin = arquivo;
-    }
-    
-    yylex();
-    
-    // Emite DEDENT restantes no final do arquivo
-    for (int i = 0; i < nivel_indentacao; i++) {
-        printf("DEDENT\n");
-    }
-    
-    if (argc > 1) {
-        fclose(yyin);
-    }
-    
-    return 0;
+void yyerror(const char *s) {
+    fprintf(stderr, "Erro na linha %d, coluna %d: %s\n", linha, coluna, s);
 }
