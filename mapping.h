@@ -24,6 +24,31 @@ static struct builtin_mapping funcoes_builtin[] = {
     {"min", "minimo"},
     {"abs", "absoluto"},
     {"round", "arredondar"},
+
+    /* Novas funções adicionadas */
+    {"type", "tipo"},
+    {"bool", "booleano"},
+    {"enumerate", "enumerar"},
+    {"zip", "emparelhar"},
+    {"reversed", "reverter"},
+    {"sorted", "ordenar"},
+    {"map", "mapear"},
+    {"filter", "filtrar"},
+    {"all", "todos"},
+    {"any", "algum"},
+    {"open", "abrir"},
+    {"chr", "caractere"},
+    {"ord", "codigo"},
+    {"bin", "binario"},
+    {"hex", "hexadecimal"},
+    {"oct", "octal"},
+    {"pow", "potencia"},
+    {"divmod", "dividir_modulo"},
+    {"isinstance", "e_instancia"},
+    {"issubclass", "e_subclasse"},
+    {"help", "ajuda"},
+    {"id", "identificador"},
+
     {NULL, NULL}
 };
 
