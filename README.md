@@ -48,11 +48,12 @@ O interpretador reconhece os seguintes tipos de tokens:
 
 ### Compilação
 ```bash
-# Compilar o projeto
-make
 
 # Limpar arquivos gerados
 make clean
+
+# Compilar o projeto
+make
 ```
 
 ### Execução
