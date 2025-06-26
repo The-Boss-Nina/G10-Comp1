@@ -4,10 +4,8 @@
 #include <string.h>
 #include <unistd.h>
 
-/* Forward declaration para evitar dependências circulares */
 typedef struct ASTNode ASTNode;
 
-/* Definir YYSTYPE antes de incluir parser.tab.h */
 typedef union {
     int integer;
     double real;
@@ -22,10 +20,19 @@ extern YYSTYPE yylval;
 
 int linha = 1;
 int coluna = 1;
-int nivel_indentacao = 0;
-int stack_indentacao[100];
-int topo_stack = 0;
-int inicio_linha = 1;
+
+#define MAX_INDENT_STACK 100
+static int indent_stack[MAX_INDENT_STACK];
+static int indent_sp = 0;
+static int current_indent_level = 0;
+static int dedents_to_emit = 0;
+
+void init_indentation_stack() {
+    indent_stack[0] = 0;
+    indent_sp = 1;
+    current_indent_level = 0;
+    dedents_to_emit = 0;
+}
 
 void atualiza_localizacao() {
     coluna += yyleng;
@@ -34,202 +41,193 @@ void atualiza_localizacao() {
 void nova_linha() {
     linha++;
     coluna = 1;
-    inicio_linha = 1;
 }
 
-int processa_indentacao() {
-    int espacos = 0;
-    char *texto = yytext;
-    
-    // Conta espaços e tabs
-    while (*texto != '\0') {
-        if (*texto == ' ') {
-            espacos++;
-        } else if (*texto == '\t') {
-            espacos += 4; // 1 tab = 4 espaços
-        }
-        texto++;
-    }
-    
-    int novo_nivel = espacos / 4;
-    
-    if (novo_nivel > nivel_indentacao) {
-        // Aumentou indentação
-        stack_indentacao[topo_stack++] = nivel_indentacao;
-        nivel_indentacao = novo_nivel;
-        return INDENT;
-    } else if (novo_nivel < nivel_indentacao) {
-        // Diminuiu indentação - pode precisar de múltiplos DEDENTs
-        // Por enquanto, retorna apenas um DEDENT
-        if (topo_stack > 0) {
-            nivel_indentacao = stack_indentacao[--topo_stack];
-        } else {
-            nivel_indentacao = novo_nivel;
-        }
+static int emit_dedents_if_needed() {
+    if (dedents_to_emit > 0) {
+        dedents_to_emit--;
+        current_indent_level = indent_stack[indent_sp - 1];
         return DEDENT;
     }
-    
-    return 0; // Mesmo nível de indentação
+    return 0;
 }
-
-%}
-
-%option noyywrap
-
-/* Definições */
-DIGITO      [0-9]
-LETRA       [a-zA-Z]
-ID          [a-zA-Z_][a-zA-Z0-9_]*
-NUM_INT     {DIGITO}+
-NUM_FLOAT   {DIGITO}+\.{DIGITO}+
-STRING      \"[^\"]*\"|\'[^\']*\'
-ESPACO      [ \t]+
-NOVA_LINHA  \n
-INDENTACAO  ^[ \t]+
-
-%%
-
-    /* Tratamento de indentação */
-{INDENTACAO} { 
-    if (inicio_linha) {
-        coluna += yyleng;
-        inicio_linha = 0;
-        int token = processa_indentacao();
-        if (token) return token;
-    } else {
-        coluna += yyleng;
-    }
-}
-
-    /* Início de linha sem indentação - pode precisar de DEDENT */
-^[^ \t\n] {
-    if (inicio_linha && nivel_indentacao > 0) {
-        // Estávamos indentados e agora não estamos mais
-        unput(yytext[0]); // Volta o caractere para o buffer
-        nivel_indentacao = stack_indentacao[--topo_stack];
-        return DEDENT;
-    } else {
-        unput(yytext[0]); // Volta o caractere para o buffer
-        inicio_linha = 0;
-    }
-}
-
-    /* Palavras-chave */
-"if"        { atualiza_localizacao(); inicio_linha = 0; return IF; }
-"elif"      { atualiza_localizacao(); inicio_linha = 0; return ELIF; }
-"else"      { atualiza_localizacao(); inicio_linha = 0; return ELSE; }
-"while"     { atualiza_localizacao(); inicio_linha = 0; return WHILE; }
-"for"       { atualiza_localizacao(); inicio_linha = 0; return FOR; }
-"in"        { atualiza_localizacao(); inicio_linha = 0; return IN; }
-"def"       { atualiza_localizacao(); inicio_linha = 0; return DEF; }
-"return"    { atualiza_localizacao(); inicio_linha = 0; return RETURN; }
-"class"     { atualiza_localizacao(); inicio_linha = 0; return CLASS; }
-"import"    { atualiza_localizacao(); inicio_linha = 0; return IMPORT; }
-"from"      { atualiza_localizacao(); inicio_linha = 0; return FROM; }
-"as"        { atualiza_localizacao(); inicio_linha = 0; return AS; }
-"try"       { atualiza_localizacao(); inicio_linha = 0; return TRY; }
-"except"    { atualiza_localizacao(); inicio_linha = 0; return EXCEPT; }
-"finally"   { atualiza_localizacao(); inicio_linha = 0; return FINALLY; }
-"with"      { atualiza_localizacao(); inicio_linha = 0; return WITH; }
-"break"     { atualiza_localizacao(); inicio_linha = 0; return BREAK; }
-"continue"  { atualiza_localizacao(); inicio_linha = 0; return CONTINUE; }
-"pass"      { atualiza_localizacao(); inicio_linha = 0; return PASS; }
-"None"      { atualiza_localizacao(); inicio_linha = 0; return NONE; }
-"True"      { atualiza_localizacao(); inicio_linha = 0; return TRUE; }
-"False"     { atualiza_localizacao(); inicio_linha = 0; return FALSE; }
-
-    /* Operadores lógicos */
-"and"       { atualiza_localizacao(); inicio_linha = 0; return AND; }
-"or"        { atualiza_localizacao(); inicio_linha = 0; return OR; }
-"not"       { atualiza_localizacao(); inicio_linha = 0; return NOT; }
-
-    /* Operadores aritméticos - ordem importante! */
-"**"        { atualiza_localizacao(); inicio_linha = 0; return POWER; }
-"//"        { atualiza_localizacao(); inicio_linha = 0; return FLOOR_DIV; }
-"+"         { atualiza_localizacao(); inicio_linha = 0; return PLUS; }
-"-"         { atualiza_localizacao(); inicio_linha = 0; return MINUS; }
-"*"         { atualiza_localizacao(); inicio_linha = 0; return MULTIPLY; }
-"/"         { atualiza_localizacao(); inicio_linha = 0; return DIVIDE; }
-"%"         { atualiza_localizacao(); inicio_linha = 0; return MODULO; }
-
-    /* Operadores de atribuição - ordem importante! */
-"+="        { atualiza_localizacao(); inicio_linha = 0; return PLUS_ASSIGN; }
-"-="        { atualiza_localizacao(); inicio_linha = 0; return MINUS_ASSIGN; }
-"*="        { atualiza_localizacao(); inicio_linha = 0; return MULTIPLY_ASSIGN; }
-"/="        { atualiza_localizacao(); inicio_linha = 0; return DIVIDE_ASSIGN; }
-"%="        { atualiza_localizacao(); inicio_linha = 0; return MODULO_ASSIGN; }
-"="         { atualiza_localizacao(); inicio_linha = 0; return ASSIGN; }
-
-    /* Operadores de comparação - ordem importante! */
-"=="        { atualiza_localizacao(); inicio_linha = 0; return EQUAL; }
-"!="        { atualiza_localizacao(); inicio_linha = 0; return NOT_EQUAL; }
-"<="        { atualiza_localizacao(); inicio_linha = 0; return LESS_EQUAL; }
-">="        { atualiza_localizacao(); inicio_linha = 0; return GREATER_EQUAL; }
-"<"         { atualiza_localizacao(); inicio_linha = 0; return LESS; }
-">"         { atualiza_localizacao(); inicio_linha = 0; return GREATER; }
-
-    /* Delimitadores */
-"("         { atualiza_localizacao(); inicio_linha = 0; return LPAREN; }
-")"         { atualiza_localizacao(); inicio_linha = 0; return RPAREN; }
-"["         { atualiza_localizacao(); inicio_linha = 0; return LBRACKET; }
-"]"         { atualiza_localizacao(); inicio_linha = 0; return RBRACKET; }
-"{"         { atualiza_localizacao(); inicio_linha = 0; return LBRACE; }
-"}"         { atualiza_localizacao(); inicio_linha = 0; return RBRACE; }
-":"         { atualiza_localizacao(); inicio_linha = 0; return COLON; }
-","         { atualiza_localizacao(); inicio_linha = 0; return COMMA; }
-"."         { atualiza_localizacao(); inicio_linha = 0; return DOT; }
-
-    /* Tokens literais */
-{ID}        { 
-    atualiza_localizacao(); 
-    inicio_linha = 0; 
-    yylval.string = strdup(yytext); 
-    return IDENTIFIER; 
-}
-{NUM_INT}   { 
-    atualiza_localizacao(); 
-    inicio_linha = 0; 
-    yylval.integer = atoi(yytext); 
-    return INTEGER; 
-}
-{NUM_FLOAT} { 
-    atualiza_localizacao(); 
-    inicio_linha = 0; 
-    yylval.real = atof(yytext); 
-    return FLOAT; 
-}
-{STRING}    { 
-    atualiza_localizacao(); 
-    inicio_linha = 0; 
-    yylval.string = strdup(yytext); 
-    return STRING_LITERAL; 
-}
-
-    /* Nova linha */
-{NOVA_LINHA} { 
-    nova_linha();
-    return NEWLINE;
-}
-
-    /* Espaços (ignorados exceto no início da linha) */
-{ESPACO}    { 
-    if (!inicio_linha) {
-        atualiza_localizacao(); 
-    }
-}
-
-    /* Comentários */
-"#".*       { atualiza_localizacao(); inicio_linha = 0; /* ignora comentários */ }
-
-    /* Caracteres não reconhecidos */
-.           { 
-    atualiza_localizacao(); 
-    printf("ERRO: Caractere não reconhecido '%s' na linha %d, coluna %d\n", yytext, linha, coluna-1); 
-    inicio_linha = 0;
-}
-
-%%
 
 void yyerror(const char *s) {
     fprintf(stderr, "Erro na linha %d, coluna %d: %s\n", linha, coluna, s);
 }
+
+void __attribute__((constructor)) init_lexer_on_load() {
+    init_indentation_stack();
+}
+%}
+
+%option noyywrap
+%x INDENT_STATE
+
+DIGITO        [0-9]
+LETRA         [a-zA-Z]
+ID            {LETRA}[a-zA-Z0-9_]*
+NUM_INT       {DIGITO}+
+NUM_FLOAT     {DIGITO}+\.{DIGITO}+
+STRING        \"[^\"]*\"|\'[^\']*\'
+ESPACO        [ \t]+
+COMENTARIO    \#.*
+NOVA_LINHA    \n
+%%
+
+<INITIAL>{NOVA_LINHA} {
+    nova_linha();
+    BEGIN INDENT_STATE;
+
+    int token_dedent = emit_dedents_if_needed();
+    if (token_dedent) {
+        return token_dedent;
+    }
+
+    return NEWLINE;
+}
+
+<INDENT_STATE>{ESPACO} {
+    current_indent_level = yyleng;
+}
+
+<INDENT_STATE>{COMENTARIO} {
+    current_indent_level = 0;
+    nova_linha();
+    BEGIN INDENT_STATE;
+}
+
+<INDENT_STATE>{NOVA_LINHA} {
+    current_indent_level = 0;
+    nova_linha();
+    BEGIN INDENT_STATE;
+    return NEWLINE;
+}
+
+<INDENT_STATE>[^\n \t\#] {
+    unput(yytext[0]);
+
+    if (current_indent_level > indent_stack[indent_sp - 1]) {
+        if (indent_sp >= MAX_INDENT_STACK) {
+            yyerror("Erro: Limite de indentacao excedido!");
+            exit(1);
+        }
+        indent_stack[indent_sp++] = current_indent_level;
+        BEGIN INITIAL;
+        return INDENT;
+    } else if (current_indent_level < indent_stack[indent_sp - 1]) {
+        while (indent_sp > 1 && current_indent_level < indent_stack[indent_sp - 1]) {
+            indent_sp--;
+            dedents_to_emit++;
+        }
+        if (current_indent_level != indent_stack[indent_sp - 1]) {
+            yyerror("Erro: Indentacao inconsistente");
+            exit(1);
+        }
+        BEGIN INITIAL;
+        dedents_to_emit--;
+        return DEDENT;
+    } else {
+        BEGIN INITIAL;
+    }
+}
+
+<INITIAL>{
+    "**"        { atualiza_localizacao(); return POWER; }
+    "//"        { atualiza_localizacao(); return FLOOR_DIV; }
+    "+="        { atualiza_localizacao(); return PLUS_ASSIGN; }
+    "-="        { atualiza_localizacao(); return MINUS_ASSIGN; }
+    "*="        { atualiza_localizacao(); return MULTIPLY_ASSIGN; }
+    "/="        { atualiza_localizacao(); return DIVIDE_ASSIGN; }
+    "%="        { atualiza_localizacao(); return MODULO_ASSIGN; }
+    "=="        { atualiza_localizacao(); return EQUAL; }
+    "!="        { atualiza_localizacao(); return NOT_EQUAL; }
+    "<="        { atualiza_localizacao(); return LESS_EQUAL; }
+    ">="        { atualiza_localizacao(); return GREATER_EQUAL; }
+
+    "if"        { atualiza_localizacao(); return IF; }
+    "elif"      { atualiza_localizacao(); return ELIF; }
+    "else"      { atualiza_localizacao(); return ELSE; }
+    "while"     { atualiza_localizacao(); return WHILE; }
+    "for"       { atualiza_localizacao(); return FOR; }
+    "in"        { atualiza_localizacao(); return IN; }
+    "def"       { atualiza_localizacao(); return DEF; }
+    "return"    { atualiza_localizacao(); return RETURN; }
+    "class"     { atualiza_localizacao(); return CLASS; }
+    "import"    { atualiza_localizacao(); return IMPORT; }
+    "from"      { atualiza_localizacao(); return FROM; }
+    "as"        { atualiza_localizacao(); return AS; }
+    "try"       { atualiza_localizacao(); return TRY; }
+    "except"    { atualiza_localizacao(); return EXCEPT; }
+    "finally"   { atualiza_localizacao(); return FINALLY; }
+    "with"      { atualiza_localizacao(); return WITH; }
+    "break"     { atualiza_localizacao(); return BREAK; }
+    "continue"  { atualiza_localizacao(); return CONTINUE; }
+    "pass"      { atualiza_localizacao(); return PASS; }
+    "None"      { atualiza_localizacao(); return NONE; }
+    "True"      { atualiza_localizacao(); return TRUE; }
+    "False"     { atualiza_localizacao(); return FALSE; }
+
+    "and"       { atualiza_localizacao(); return AND; }
+    "or"        { atualiza_localizacao(); return OR; }
+    "not"       { atualiza_localizacao(); return NOT; }
+
+    "+"         { atualiza_localizacao(); return PLUS; }
+    "-"         { atualiza_localizacao(); return MINUS; }
+    "*"         { atualiza_localizacao(); return MULTIPLY; }
+    "/"         { atualiza_localizacao(); return DIVIDE; }
+    "%"         { atualiza_localizacao(); return MODULO; }
+
+    "="         { atualiza_localizacao(); return ASSIGN; }
+    "<"         { atualiza_localizacao(); return LESS; }
+    ">"         { atualiza_localizacao(); return GREATER; }
+
+    "("         { atualiza_localizacao(); return LPAREN; }
+    ")"         { atualiza_localizacao(); return RPAREN; }
+    "["         { atualiza_localizacao(); return LBRACKET; }
+    "]"         { atualiza_localizacao(); return RBRACKET; }
+    "{"         { atualiza_localizacao(); return LBRACE; }
+    "}"         { atualiza_localizacao(); return RBRACE; }
+    ":"         { atualiza_localizacao(); return COLON; }
+    ","         { atualiza_localizacao(); return COMMA; }
+    "."         { atualiza_localizacao(); return DOT; }
+
+    {ID}        {
+        atualiza_localizacao();
+        yylval.string = strdup(yytext);
+        return IDENTIFIER;
+    }
+    {NUM_FLOAT} {
+        atualiza_localizacao();
+        yylval.real = atof(yytext);
+        return FLOAT;
+    }
+    {NUM_INT}   {
+        atualiza_localizacao();
+        yylval.integer = atoi(yytext);
+        return INTEGER;
+    }
+    {STRING}    {
+        atualiza_localizacao();
+        yylval.string = strdup(yytext);
+        return STRING_LITERAL;
+    }
+
+    {ESPACO}    { atualiza_localizacao(); }
+    {COMENTARIO} { atualiza_localizacao(); }
+
+    . {
+        atualiza_localizacao();
+        fprintf(stderr, "ERRO: Caractere nao reconhecido '%s' na linha %d, coluna %d\n", yytext, linha, coluna - yyleng);
+    }
+}
+
+<<EOF>> {
+    while (indent_sp > 1) {
+        indent_sp--;
+        return DEDENT;
+    }
+    return 0;
+}
+
+%%
