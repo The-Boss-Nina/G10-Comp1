@@ -59,21 +59,15 @@ make
 ### Execução
 ```bash
 # Analisar um arquivo Python e traduzir para português
-make compilar ARQUIVO=exemplo.py
+make executar ARQUIVO=python_samples/NOME_ARQUIVO.py
+
+ou
+
+./interpretador python_samples/NOME_ARQUIVO.py
 ```
 
 O resultado será gerado no arquivo `tokens_portugues.txt`.
 
-### Executando Manualmente
-Também é possível executar cada etapa separadamente:
-
-```bash
-# Executar apenas o scanner
-./scanner exemplo.py > tokens_python.txt
-
-# Executar apenas o tradutor
-./tradutor tokens_python.txt > tokens_portugues.txt
-```
 ## Exemplo
 
 Para o código Python:
