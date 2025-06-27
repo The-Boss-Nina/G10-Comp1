@@ -1,15 +1,16 @@
 # Interpretador Python para Linguagem Abstrata em Português
 
-Este projeto implementa um interpretador que traduz código Python para uma linguagem abstrata em português. Ele foi desenvolvido como parte da disciplina de Compiladores 1 (FGA0003).
+Este projeto implementa um compilador que traduz código Python para uma linguagem em português, incluindo análise léxica, sintática e geração de AST (Árvore Sintática Abstrata). Foi desenvolvido como parte da disciplina de Compiladores 1 (FGA0003).
 
 ## Estrutura do Projeto
 
 O projeto é composto pelos seguintes componentes:
 
 1. **scanner.l**: Analisador léxico escrito em Flex que identifica tokens de código Python.
-2. **mapeamento.h**: Contém o mapeamento de tokens Python para seus equivalentes em português.
-3. **tradutor.c**: Converte os tokens Python identificados pelo scanner para a linguagem abstrata em português.
-4. **Makefile**: Script para facilitar a compilação e execução do projeto.
+2. **parser.y**: Analisador sintático em Bison que constrói a AST
+4. **ast.h/ast.c**: Implementação da Árvore Sintática Abstrata
+3. **mapeamento.h**: Tradução de tokens e funções built-in para português
+5. **Makefile**: Script para facilitar a compilação e execução do projeto.
 
 ## Tokens Implementados
 
@@ -32,6 +33,13 @@ O interpretador reconhece os seguintes tipos de tokens:
 - Comparação: `==`, `!=`, `<`, `>`, `<=`, `>=`
 - Atribuição: `=`, `+=`, `-=`, `*=`, `/=`, `%=`
 
+
+### Funções Built-in
+- print() → escrever()
+- len() → tamanho()
+- input() → ler()
+- Mais de 30 funções mapeadas
+
 ### Outros Elementos
 - Identificadores (nomes de variáveis e funções)
 - Números (inteiros e de ponto flutuante)
@@ -45,6 +53,7 @@ O interpretador reconhece os seguintes tipos de tokens:
 ### Requisitos
 - GCC (GNU Compiler Collection)
 - Flex (Fast Lexical Analyzer Generator)
+- Bison (versão 3.0 ou superior)
 
 ### Compilação
 ```bash
