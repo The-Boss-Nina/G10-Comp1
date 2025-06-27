@@ -41,6 +41,13 @@ typedef struct ASTNode {
     int capacity;
 } ASTNode;
 
+typedef enum {
+    FLOW_NONE,
+    FLOW_BREAK,
+    FLOW_CONTINUE,
+    FLOW_RETURN
+} FlowControl;
+
 /* Funções para manipulação da AST */
 ASTNode* create_node(NodeType type, const char* value);
 void add_child(ASTNode* parent, ASTNode* child);
@@ -48,22 +55,27 @@ void print_ast(ASTNode* node, int depth);
 void free_ast(ASTNode* node);
 
 /* Interpretador */
-void interpret(ASTNode* node);
-void interpret_stmt_list(ASTNode* node);
-void interpret_assign(ASTNode* node);
-void interpret_if(ASTNode* node);
-void interpret_while(ASTNode* node);
-void interpret_for(ASTNode* node);
-void interpret_function_def(ASTNode* node);
-void interpret_function_call(ASTNode* node);
+FlowControl interpret(ASTNode* node);
 int evaluate_expression(ASTNode* node);
+
+FlowControl interpret_stmt_list(ASTNode* node);
+FlowControl interpret_assign(ASTNode* node);
+FlowControl interpret_if(ASTNode* node);
+FlowControl interpret_while(ASTNode* node);
+FlowControl interpret_for(ASTNode* node);
+FlowControl interpret_function_def(ASTNode* node);
+FlowControl interpret_function_call(ASTNode* node);
 
 /* Tabela de símbolos simples */
 typedef struct Symbol {
     char* name;
-    int value;
+    int* list;     // lista de inteiros (simples)
+    int size;      // tamanho da lista
+    int value;     // valor inteiro (fallback)
     struct Symbol* next;
 } Symbol;
+
+
 
 extern Symbol* symbol_table;
 void set_variable(const char* name, int value);
