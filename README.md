@@ -75,52 +75,46 @@ ou
 ./interpretador python_samples/NOME_ARQUIVO.py
 ```
 
-O resultado será gerado no arquivo `tokens_portugues.txt`.
+O resultado será gerado no Terminal/Console.
 
 ## Exemplo
 
 Para o código Python:
 ```python
-def calcular_media(valores):
-    total = 0
-    for valor in valores:
-        total += valor
-    return total / len(valores)
+x = 10
+y = 20
+z = x + y
+print(z)
 ```
 
 A saída será semelhante a:
 ```
-PALAVRA_CHAVE: funcao
-IDENTIFICADOR: calcular_media
-DELIMITADOR: (
-IDENTIFICADOR: valores
-DELIMITADOR: )
-DELIMITADOR: :
-NOVA_LINHA
-INDENT
-IDENTIFICADOR: total
-OPERADOR_ATRIBUICAO: recebe
-NUMERO_INTEIRO: 0
-NOVA_LINHA
-PALAVRA_CHAVE: para
-IDENTIFICADOR: valor
-PALAVRA_CHAVE: em
-IDENTIFICADOR: valores
-DELIMITADOR: :
-NOVA_LINHA
-INDENT
-IDENTIFICADOR: total
-OPERADOR_ATRIBUICAO: incrementa
-IDENTIFICADOR: valor
-NOVA_LINHA
-DEDENT
-PALAVRA_CHAVE: retornar
-IDENTIFICADOR: total
-OPERADOR_ARITMETICO: dividido_por
-IDENTIFICADOR: tamanho
-DELIMITADOR: (
-IDENTIFICADOR: valores
-DELIMITADOR: )
-NOVA_LINHA
-DEDENT
+=== Executando python_samples/teste_basico.py ===
+Iniciando análise sintática...
+AST construída com sucesso!
+Análise sintática concluída com sucesso!
+
+=== AST em Português ===
+LISTA_COMANDOS
+  ATRIBUICAO: recebe
+    IDENTIFICADOR: x
+    INTEIRO: 10
+  ATRIBUICAO: recebe
+    IDENTIFICADOR: y
+    INTEIRO: 20
+  ATRIBUICAO: recebe
+    IDENTIFICADOR: z
+    OP_BINARIO: mais
+      IDENTIFICADOR: x
+      IDENTIFICADOR: y
+  CHAMADA_FUNCAO: escrever
+    LISTA_EXPR
+      IDENTIFICADOR: z
+
+=== Interpretação ===
+EXECUTANDO: x recebe 10
+EXECUTANDO: y recebe 20
+EXECUTANDO: z recebe 30
+EXECUTANDO: chamada de função escrever
+SAÍDA: 30 
 ```
