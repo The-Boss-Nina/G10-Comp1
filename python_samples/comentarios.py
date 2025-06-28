@@ -6,11 +6,10 @@ y = 20
 # Comentário entre atribuições
 z = x + y
 
-# Função com comentários
-def somar(a, b):  # Comentário na definição
-    # Comentário dentro da função
-    resultado = a + b  # Operação
-    return resultado  # Retorno
+
+def somar(a, b): 
+  resultado = a + b  
+  return resultado  
 
 # Comentário antes da chamada
 print(z)  # Comentário após print

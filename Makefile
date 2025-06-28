@@ -30,7 +30,7 @@ $(LEXER_C): $(LEXER) $(PARSER_H)
 
 # Compilar o interpretador
 $(TARGET): $(LEXER_C) $(PARSER_C) $(AST_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(LEXER_C) $(PARSER_C) $(AST_SRC) -lfl
+	$(CC) $(CFLAGS) -o $(TARGET) $(LEXER_C) $(PARSER_C) $(AST_SRC) -lfl -lm
 
 # Regra para executar um arquivo específico
 executar: $(TARGET)

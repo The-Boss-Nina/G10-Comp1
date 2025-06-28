@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include<math.h>
 #include "ast.h"
 
 /* Tabela de símbolos global */
@@ -276,7 +277,11 @@ FlowControl interpret_assign(ASTNode *node)
         }
 
         set_variable(var->value, resultado);
-        printf("EXECUTANDO: %s %s %d\n", var->value, node->value, resultado);
+        if (expr->type == NODE_BINARY_OP)
+          printf("EXECUTANDO: %s %s %s %d\n", var->value, node->value, expr->value, resultado);
+        else
+          printf("EXECUTANDO: %s %s %d\n", var->value, node->value, resultado);
+
     
 
         // // Caso normal
@@ -448,6 +453,12 @@ int evaluate_expression(ASTNode *node)
                 return right != 0 ? left / right : 0;
             if (strcmp(node->value, "modulo") == 0)
                 return right != 0 ? left % right : 0;
+            if (strcmp(node->value, "divisao_inteira") == 0)
+                return right != 0 ? left / right : 0;
+            if (strcmp(node->value, "elevado_a") == 0)
+                return (int)pow(left, right);
+
+            // Operadores de comparação
             if (strcmp(node->value, "igual_a") == 0)
                 return left == right;
             if (strcmp(node->value, "diferente_de") == 0)
@@ -460,6 +471,8 @@ int evaluate_expression(ASTNode *node)
                 return left <= right;
             if (strcmp(node->value, "maior_ou_igual_a") == 0)
                 return left >= right;
+
+            // Operadores lógicos
             if (strcmp(node->value, "e") == 0)
                 return left && right;
             if (strcmp(node->value, "ou") == 0)

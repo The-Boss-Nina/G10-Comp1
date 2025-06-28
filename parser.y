@@ -176,25 +176,59 @@ expr_stmt:
     ;
 
 assign_stmt:
-    IDENTIFIER ASSIGN expr { 
-        $$ = create_node(NODE_ASSIGN, "recebe"); 
-        ASTNode* var = create_node(NODE_IDENTIFIER, $1);
-        add_child($$, var);
-        add_child($$, $3);
-    }
-    | IDENTIFIER PLUS_ASSIGN expr { 
-        $$ = create_node(NODE_ASSIGN, "incrementa"); 
-        ASTNode* var = create_node(NODE_IDENTIFIER, $1);
-        add_child($$, var);
-        add_child($$, $3);
-    }
-    | IDENTIFIER MINUS_ASSIGN expr { 
-        $$ = create_node(NODE_ASSIGN, "decrementa"); 
-        ASTNode* var = create_node(NODE_IDENTIFIER, $1);
-        add_child($$, var);
-        add_child($$, $3);
-    }
-    ;
+      IDENTIFIER ASSIGN expr {
+          $$ = create_node(NODE_ASSIGN, "recebe");
+          ASTNode* var = create_node(NODE_IDENTIFIER, $1);
+          add_child($$, var);
+          add_child($$, $3);
+      }
+    | IDENTIFIER PLUS_ASSIGN expr {
+          $$ = create_node(NODE_ASSIGN, "recebe");
+          ASTNode* var = create_node(NODE_IDENTIFIER, $1);
+          ASTNode* op = create_node(NODE_BINARY_OP, "mais");
+          add_child(op, create_node(NODE_IDENTIFIER, $1));
+          add_child(op, $3);
+          add_child($$, var);
+          add_child($$, op);
+      }
+    | IDENTIFIER MINUS_ASSIGN expr {
+          $$ = create_node(NODE_ASSIGN, "recebe");
+          ASTNode* var = create_node(NODE_IDENTIFIER, $1);
+          ASTNode* op = create_node(NODE_BINARY_OP, "menos");
+          add_child(op, create_node(NODE_IDENTIFIER, $1));
+          add_child(op, $3);
+          add_child($$, var);
+          add_child($$, op);
+      }
+    | IDENTIFIER MULTIPLY_ASSIGN expr {
+          $$ = create_node(NODE_ASSIGN, "recebe");
+          ASTNode* var = create_node(NODE_IDENTIFIER, $1);
+          ASTNode* op = create_node(NODE_BINARY_OP, "vezes");
+          add_child(op, create_node(NODE_IDENTIFIER, $1));
+          add_child(op, $3);
+          add_child($$, var);
+          add_child($$, op);
+      }
+    | IDENTIFIER DIVIDE_ASSIGN expr {
+          $$ = create_node(NODE_ASSIGN, "recebe");
+          ASTNode* var = create_node(NODE_IDENTIFIER, $1);
+          ASTNode* op = create_node(NODE_BINARY_OP, "dividido_por");
+          add_child(op, create_node(NODE_IDENTIFIER, $1));
+          add_child(op, $3);
+          add_child($$, var);
+          add_child($$, op);
+      }
+    | IDENTIFIER MODULO_ASSIGN expr {
+          $$ = create_node(NODE_ASSIGN, "recebe");
+          ASTNode* var = create_node(NODE_IDENTIFIER, $1);
+          ASTNode* op = create_node(NODE_BINARY_OP, "modulo");
+          add_child(op, create_node(NODE_IDENTIFIER, $1));
+          add_child(op, $3);
+          add_child($$, var);
+          add_child($$, op);
+      }
+;
+
 
 expr:
     or_expr { $$ = $1; }
