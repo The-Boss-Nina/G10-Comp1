@@ -38,7 +38,8 @@ O interpretador reconhece os seguintes tipos de tokens:
 - print() → escrever()
 - len() → tamanho()
 - input() → ler()
-- Mais de 30 funções mapeadas
+- e outras...
+
 
 ### Outros Elementos
 - Identificadores (nomes de variáveis e funções)
